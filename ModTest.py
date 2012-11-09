@@ -72,7 +72,8 @@ def to_svm_label(l):
 if __name__ == '__main__':
     #base = [1, 3, 5]
     base = [1, 3, 5, 7, 13, 27]
-    divisors = base + [9, 12, 15, 2, 20]
+    divisors = base
+    #divisors = [2, 4, 6, 8, 14, 28]
     #divisors = [1, 2, 3, 5]
     limits = [sum(base)] + base
     factors_set = generate_factors_set(len(base))
