@@ -1,5 +1,22 @@
 import svm, svmutil
 import matplotlib.pyplot as plt
+import sys
+
+from itertools import product
+
+def test_base(base):
+    factor_set = list(product([0,1], repeat=len(base)))
+    print "factor_set: ", factor_set
+    sums = [sum_factors(base, factors) for factors in factor_set]
+    print "sums: ", sums
+    base_occurences = [0 for _ in base]
+    for s in sums:
+        if s in base:
+            base_occurences[base.index(s)] += 1
+            if base_occurences[base.index(s)] > 1:
+                print "base entry %d is constructable" % s
+                return False
+    return True
 
 def sv_to_vec(sv, length):
     vec = numpy.zeros(length)
@@ -25,6 +42,9 @@ def sum_factors(base, factors):
 
 def calculate_modulos(modulos, x):
     return [x % m for m in modulos]
+
+def calculate_modulos_with_shifts(modulos, shifts, x):
+    return [(x+s) % m for m, s in zip(modulos, shifts)]
 
 def take_components(x, components):
     if components is not None:
@@ -70,55 +90,82 @@ def to_svm_label(l):
         return -1
 
 if __name__ == '__main__':
-    #base = [1, 3, 5]
-    base = [1, 3, 5, 7, 13, 27]
+    base = [1, 3, 5]
+    base = [1, 3, 5, 7, 14]
     divisors = base
     #divisors = [2, 4, 6, 8, 14, 28]
     #divisors = [1, 2, 3, 5]
+
+    if not test_base(base):
+        sys.exit(1)
+
     limits = [sum(base)] + base
     factors_set = generate_factors_set(len(base))
     sums = [sum_factors(base, factors) for factors in factors_set]
-    modulos_set = [calculate_modulos(divisors, s) for s in sums]
-    input_set = [[s] + modulos for modulos, s in zip(modulos_set, sums)]
     target_set = [[factors[i] for factors in factors_set] 
                   for i in range(len(base))]
+    shift_ranges = [range(d) for d in divisors]
+    shifts_set = list(product(*shift_ranges))
 
     print "base:         ", base
     print "factors_set:  ", factors_set
     print "sums:         ", sums
-    print "modulos_set:  ", modulos_set
-    print "input_set:    ", input_set
     print "target_set:   ", target_set
 
-    n_success = 0
-    n_failure = 0
-    total_correct = 0
-    for n in range(len(target_set)):
-        targets = [to_svm_label(t) for t in target_set[n]]
+    print "Shift set:"
+    #for shift in shifts_set:
+    #    print shift
 
-        print
-        print "Class (base element): %d = %d" % (n, base[n])
-        print "targets:       ", targets
-        print "input vectors: ", input_set
+    best_correct_percent = 0 
+    for shifts in shifts_set:
+        n_success = 0
+        n_failure = 0
+        total_correct = 0
+        for n in range(len(target_set)):
+            targets = [to_svm_label(t) for t in target_set[n]]
+
+            modulos_set = [calculate_modulos_with_shifts(divisors, shifts, s) for s in sums]
+            input_set = [[s] + modulos for modulos, s in zip(modulos_set, sums)]
+
+            #print
+            #print "Class (base element): %d = %d" % (n, base[n])
+            #print "targets:       ", targets
+            #print "shifts:        ", shifts
+            #print "modulos_set:   ", modulos_set
+            #print "input_set:     ", input_set
         
-        problem = svmutil.svm_problem(targets, input_set)
-        params = svmutil.svm_parameter("-q -s 0 -t 0 -c 100")
-        classifier = svmutil.svm_train(problem, params)
-        labels, acc, _ = svmutil.svm_predict(targets, input_set, classifier)
-        correct = acc[0]
-        total_correct += correct
-        if correct == 100:
-            print "Success"
-            n_success += 1
-        else:
-            print "Failure"
-            n_failure += 1
-            #class_plot(input_set, targets, [2, 3], limits)
-            #plt.show()
+            problem = svmutil.svm_problem(targets, input_set)
+            params = svmutil.svm_parameter("-q -s 0 -t 0 -c 100")
+            classifier = svmutil.svm_train(problem, params)
+            labels, acc, _ = svmutil.svm_predict(targets, input_set, classifier)
+            correct = acc[0]
+            total_correct += correct
+            if correct == 100:
+                #print "Success"
+                n_success += 1
+            else:
+                #print "Failure"
+                n_failure += 1
+                #class_plot(input_set, targets, [2, 3], limits)
+                #plt.show()
+
+        correct_percent = total_correct / len(target_set)
+
+        #print
+        #print "Successes: %d, Failures: %d" % (n_success, n_failure)
+        #print "Total accuracy: %f %%" % correct_percent
+
+        if correct_percent > best_correct_percent:
+            best_correct_percent = correct_percent
+            best_shifts = shifts
+
+        print "Best total accuracy so far: %.3f%% using shift %s" % \
+            (best_correct_percent, str(best_shifts))
 
     print
-    print "Successes: %d, Failures: %d" % (n_success, n_failure)
-    print "Total accuracy: %f %%" % (total_correct / len(target_set))
+    print "Best total accuracy: %f %%" % best_correct_percent
+    print "Using best shifts:   ", best_shifts
+
 
         
 

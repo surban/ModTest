@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ceec29a1-0f89-49a7-a98a-558e7b9f4839}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>ModTest.py</StartupFile>
+    <StartupFile>TestBase.py</StartupFile>
     <SearchPath>libsvm\python\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -22,6 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ModTest.py" />
+    <Compile Include="TestBase.py" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
 </Project>
